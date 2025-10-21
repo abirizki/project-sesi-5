@@ -1,16 +1,20 @@
 // app.js
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import cors from 'cors';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Inisialisasi Express
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); // Batas ukuran body JSON
+app.use(express.json({ limit: '10mb' }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Validasi API Key
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
@@ -20,14 +24,11 @@ if (!GOOGLE_API_KEY) {
   process.exit(1);
 }
 
-// Inisialisasi Google Generative AI
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
-// Endpoint untuk generate teks
-app.post('/Generate-text', async (req, res) => {
+app.post('/generate-text', async (req, res) => {
   const { prompt } = req.body;
 
-  // Validasi input
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({
       success: false,
@@ -37,21 +38,17 @@ app.post('/Generate-text', async (req, res) => {
   }
 
   try {
-    // Siapkan model dengan instruksi sistem
-const model = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash', // ✅ Paling kompatibel
-  systemInstruction: 'Balas dengan bahasa sunda.'
-});
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.5-flash', // ⚠️ 'gemini-2.5-flash' belum tersedia publik (per Oktober 2025)
+      systemInstruction: 'Balas dengan bahasa sunda.'
+    });
 
-    // Kirim permintaan ke Gemini
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }]
     });
 
-    // Ambil teks respons
     const responseText = result.response.text();
 
-    // Kirim respons sukses
     return res.status(200).json({
       success: true,
       message: 'Berhasil dijawab oleh Gemini',
@@ -61,14 +58,13 @@ const model = genAI.getGenerativeModel({
     console.error('🔥 Error saat memanggil Gemini:', error.message || error);
     return res.status(500).json({
       success: false,
-      message: 'Terjadi kesalahan di server saat memproses permintaan.',
+      message: 'Terjadi kesalahan di server.',
       data: null
     });
   }
 });
 
-// Jalankan server
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`✅ Project Sesi 4 berjalan di http://localhost:${PORT}`);
+  console.log(`✅ Project Sesi 5 berjalan di http://localhost:${PORT}`);
 });

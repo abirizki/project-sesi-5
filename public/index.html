@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Bahasa Sunda - Project Sesi 5</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+    }
+
+    .chat-box {
+      height: 400px;
+      overflow-y: auto;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fafafa;
+      margin-bottom: 10px;
+      clear: both;
+    }
+
+    .message {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 20px;
+      max-width: 80%;
+      display: inline-block;
+      word-wrap: break-word;
+      position: relative;
+    }
+
+    .message.user {
+      background-color: #d1e7ff;
+      float: right;
+      text-align: right;
+      clear: both;
+    }
+
+    .message.bot {
+      background-color: #dff6dd;
+      float: left;
+      text-align: left;
+      clear: both;
+    }
+
+    form {
+      display: flex;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      outline: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      border: none;
+      background-color: #0d6efd;
+      color: white;
+      border-radius: 20px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    button:hover {
+      background-color: #0b5ed7;
+    }
+
+    /* Clear floats untuk chat-box */
+    .chat-box::after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💬 Chat Bahasa Sunda</h1>
+    <div id="chat-box" class="chat-box"></div>
+    <form id="chat-form">
+      <input type="text" id="user-input" placeholder="Ketik pesan dalam bahasa Indonesia..." autocomplete="off" />
+      <button type="submit">Kirim</button>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const chatBox = document.getElementById('chat-box');
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const userMessage = input.value.trim();
+      if (!userMessage) return;
+
+      appendMessage('user', userMessage);
+      input.value = '';
+      input.focus();
+
+      // Tampilkan loading
+      const loadingId = 'loading-' + Date.now();
+      const loadingEl = document.createElement('div');
+      loadingEl.id = loadingId;
+      loadingEl.classList.add('message', 'bot');
+      loadingEl.textContent = 'Gemini is thinking...';
+      chatBox.appendChild(loadingEl);
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      try {
+        const res = await fetch('/generate-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: userMessage })
+        });
+
+        const data = await res.json();
+
+        // Hapus loading
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) loadingElement.remove();
+
+        if (data.success) {
+          appendMessage('bot', data.data);
+        } else {
+          appendMessage('bot', '❌ Error: ' + data.message);
+        }
+      } catch (err) {
+        // Hapus loading jika error
+        const loadingElement = document.getElementById(loadingId);
+        if (loadingElement) loadingElement.remove();
+        appendMessage('bot', '❌ Gagal terhubung ke server.');
+      }
+    });
+
+    function appendMessage(sender, text) {
+      const msg = document.createElement('div');
+      msg.classList.add('message', sender);
+      msg.textContent = text;
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
